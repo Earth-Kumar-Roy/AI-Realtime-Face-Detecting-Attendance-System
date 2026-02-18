@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Global Neural Audit | TRFMS Infrastructure</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+			background-color: #0f172a;
+			color: white;
+		}
+
+		.glass-card {
+			background: rgba(30, 41, 59, 0.6);
+			backdrop-filter: blur(15px);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.risk-high {
+			color: #f43f5e;
+			background: rgba(244, 63, 94, 0.1);
+			border: 1px solid rgba(244, 63, 94, 0.2);
+		}
+
+		.risk-stable {
+			color: #10b981;
+			background: rgba(16, 185, 129, 0.1);
+			border: 1px solid rgba(16, 185, 129, 0.2);
+		}
+
+		.suggestion-box {
+			border-left: 4px solid #fbbf24;
+			background: #1e293b;
+		}
+	</style>
+</head>
+
+<body class="min-h-screen p-6">
+
+	<header
+		class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-10 pb-6 border-b border-white/5 gap-4">
+		<div class="flex items-center space-x-4">
+			<div class="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-600/20">
+				<i class="fas fa-brain-circuit text-white text-2xl"></i>
+			</div>
+			<div>
+				<h1 class="text-2xl font-black uppercase tracking-tighter">Global Audit Engine</h1>
+				<p class="text-[10px] text-indigo-400 font-bold tracking-[0.3em] uppercase">Neural-Network Style Cluster
+					Analysis</p>
+			</div>
+		</div>
+
+		<div class="flex items-center gap-3">
+			<button id="runBtn" onclick="window.globalAudit.runAudit()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+        <i class="fas fa-play mr-2"></i> Run Neural Audit
+      </button>
+
+			<button onclick="window.globalAudit.goBack()" class="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-xl text-xs font-black uppercase transition-all">
+        <i class="fas fa-arrow-left mr-2"></i> Dashboard
+      </button>
+		</div>
+	</header>
+
+	<main class="max-w-7xl mx-auto space-y-8">
+
+		<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+			<div class="glass-card p-6 rounded-2xl">
+				<h4 class="text-slate-400 text-[10px] font-black uppercase mb-2">Total Registry</h4>
+				<div class="text-3xl font-black" id="totalCandidates">--</div>
+			</div>
+			<div class="glass-card p-6 rounded-2xl">
+				<h4 class="text-slate-400 text-[10px] font-black uppercase mb-2">Avg. System Utility</h4>
+				<div class="text-3xl font-black text-indigo-400" id="avgAttendance">--%</div>
+			</div>
+			<div class="glass-card p-6 rounded-2xl">
+				<h4 class="text-rose-500 text-[10px] font-black uppercase mb-2">At-Risk Cluster</h4>
+				<div class="text-3xl font-black" id="riskCount">--</div>
+			</div>
+			<div class="glass-card p-6 rounded-2xl border-amber-500/30">
+				<h4 class="text-amber-500 text-[10px] font-black uppercase mb-2">System Confidence</h4>
+				<div class="text-3xl font-black" id="confScore">98.2%</div>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+			<div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem]">
+				<h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-8">
+					<i class="fas fa-chart-line mr-2 text-indigo-500"></i> Attendance Distribution (All Candidates)
+				</h3>
+				<canvas id="globalDistChart"></canvas>
+			</div>
+
+			<div class="space-y-6">
+				<div class="glass-card p-6 rounded-[2rem]">
+					<h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">ML Intelligence
+						Suggestion</h3>
+					<div id="aiSuggestion"
+						class="suggestion-box p-4 rounded-xl text-[11px] leading-relaxed text-slate-300 italic">
+						Awaiting Command... Execute "Run Neural Audit" above to generate insights.
+					</div>
+				</div>
+
+				<div class="glass-card p-6 rounded-[2rem]">
+					<h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Risk Classification
+					</h3>
+					<canvas id="riskPieChart"></canvas>
+				</div>
+			</div>
+		</div>
+
+		<div class="glass-card rounded-[2.5rem] overflow-hidden">
+			<div class="p-6 border-b border-white/5 bg-white/5">
+				<h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Heuristic Classification Table
+				</h3>
+			</div>
+			<table class="w-full text-left border-collapse">
+				<thead class="bg-white/5 text-[10px] font-black uppercase text-slate-500">
+					<tr>
+						<th class="p-6">Candidate Name</th>
+						<th class="p-6">Roll No</th>
+						<th class="p-6">Efficiency</th>
+						<th class="p-6">ML Prediction</th>
+						<th class="p-6">Status</th>
+					</tr>
+				</thead>
+				<tbody id="auditTableBody" class="divide-y divide-white/5 text-sm font-bold">
+					<tr>
+						<td colspan="5"
+							class="p-12 text-center text-slate-500 italic uppercase tracking-widest text-xs">Awaiting
+							Neural Processing...</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<footer class="p-8 text-center border-t border-slate-200 bg-white">
+			<p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face
+				Detecting Attendance System</p>
+		</footer>
+
+	</main>
+
+	<script>
+		(function(window, document) {
+      "use strict";
+
+      const globalAudit = {};
+      let barChart = null;
+      let pieChart = null;
+
+      globalAudit.runAudit = function() {
+        const btn = document.getElementById('runBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Analyzing...`;
+        
+        google.script.run
+          .withSuccessHandler(data => {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-play mr-2"></i> Run Neural Audit`;
+            globalAudit.processData(data);
+          })
+          .getAttendanceDataforAnalysis(); 
+      };
+
+      globalAudit.processData = function(data) {
+        if (!data || data.length < 2) return;
+        const headers = data[0];
+        const rows = data.slice(1);
+        const workingDays = headers.length - 3;
+        
+        let processedResults = [];
+        let riskStats = { high: 0, stable: 0, excellent: 0 };
+        let totalSystemAttend = 0;
+
+        rows.forEach(row => {
+          let pCount = 0;
+          for (let i = 3; i < row.length; i++) {
+            const cellVal = String(row[i] || "");
+            if (cellVal === "P" || cellVal.includes(":")) {
+              pCount++;
+            }
+          }
+          const pct = ((pCount / workingDays) * 100);
+          totalSystemAttend += pct;
+
+          let cluster = "STABLE";
+          if (pct < 60) { cluster = "CRITICAL"; riskStats.high++; }
+          else if (pct > 90) { cluster = "ELITE"; riskStats.excellent++; }
+          else { riskStats.stable++; }
+
+          const forecast = Math.min(100, pct + (pct * 0.05)).toFixed(1);
+
+          processedResults.push({
+            name: row[0],
+            roll: row[2],
+            pct: pct.toFixed(1),
+            forecast: forecast,
+            cluster: cluster
+          });
+        });
+
+        globalAudit.updateUI(processedResults, riskStats, (totalSystemAttend / rows.length).toFixed(1));
+      };
+
+      globalAudit.updateUI = function(results, risk, systemAvg) {
+        document.getElementById('totalCandidates').innerText = results.length;
+        document.getElementById('avgAttendance').innerText = systemAvg + "%";
+        document.getElementById('riskCount').innerText = risk.high;
+
+        const tbody = document.getElementById('auditTableBody');
+        tbody.innerHTML = "";
+        results.forEach(res => {
+          const badgeClass = res.cluster === "CRITICAL" ? "risk-high" : "risk-stable";
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition-colors">
+              <td class="p-6">${res.name}</td>
+              <td class="p-6 text-slate-400 font-mono">${res.roll}</td>
+              <td class="p-6 text-indigo-400">${res.pct}%</td>
+              <td class="p-6 text-emerald-500">${res.forecast}%</td>
+              <td class="p-6"><span class="${badgeClass} px-3 py-1 rounded-md text-[9px]">${res.cluster}</span></td>
+            </tr>
+          `;
+        });
+
+        const sugBox = document.getElementById('aiSuggestion');
+        if (parseFloat(systemAvg) < 75) {
+          sugBox.innerHTML = `<i class="fas fa-triangle-exclamation mr-2 text-amber-500"></i> ALERT: Global average is below threshold. Review ${risk.high} critical candidates.`;
+        } else {
+          sugBox.innerHTML = `<i class="fas fa-circle-check mr-2 text-emerald-500"></i> ANALYTICS: System stable. Rewarding ${risk.excellent} elite performers recommended.`;
+        }
+
+        globalAudit.renderCharts(results, risk);
+      };
+
+      globalAudit.renderCharts = function(results, risk) {
+        const ctxBar = document.getElementById('globalDistChart').getContext('2d');
+        const ctxPie = document.getElementById('riskPieChart').getContext('2d');
+        if(barChart) barChart.destroy();
+        if(pieChart) pieChart.destroy();
+
+        barChart = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: results.map(r => r.name),
+            datasets: [{ label: 'Efficiency %', data: results.map(r => r.pct), backgroundColor: '#6366f1' }]
+          },
+          options: { scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+        });
+
+        pieChart = new Chart(ctxPie, {
+          type: 'doughnut',
+          data: {
+            labels: ['Critical', 'Stable', 'Elite'],
+            datasets: [{ data: [risk.high, risk.stable, risk.excellent], backgroundColor: ['#f43f5e', '#6366f1', '#10b981'], borderWidth: 0 }]
+          }
+        });
+      };
+
+      globalAudit.goBack = function() {
+        google.script.run.withSuccessHandler(html => {
+          document.open(); document.write(html); document.close();
+        }).loadPage("AdminDashboard");
+      };
+
+      window.globalAudit = globalAudit;
+    })(window, document);
+	</script>
+</body>
+
+</html>
