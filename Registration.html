@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<base target="_top">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Biometric Registry Enrollment Unit</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+			background-color: #f8fafc;
+		}
+
+		.gov-gradient {
+			background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+		}
+
+		.glass-card {
+			background: rgba(255, 255, 255, 0.95);
+			backdrop-filter: blur(10px);
+		}
+
+		.loader-ring {
+			border-top-color: #fbbf24;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.custom-scrollbar::-webkit-scrollbar {
+			width: 4px;
+		}
+
+		.custom-scrollbar::-webkit-scrollbar-track {
+			background: #0f172a;
+		}
+
+		.custom-scrollbar::-webkit-scrollbar-thumb {
+			background: #334155;
+			border-radius: 10px;
+		}
+	</style>
+</head>
+
+<body class="flex flex-col min-h-screen">
+
+	<header class="gov-gradient text-white p-5 shadow-lg border-b-4 border-amber-500">
+		<div class="max-w-5xl mx-auto flex justify-between items-center">
+			<div class="flex items-center space-x-4">
+				<div class="bg-white/10 p-2 rounded-xl backdrop-blur-md border border-white/20">
+					<i class="fas fa-fingerprint text-amber-400 text-2xl"></i>
+				</div>
+				<div>
+					<h1 class="text-lg font-black uppercase tracking-tighter">Registration Unit</h1>
+					<p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">Facial Identity
+						Database Management</p>
+				</div>
+			</div>
+			<button id="adminBtn" class="bg-white/5 hover:bg-white/10 border border-white/20 px-5 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center">
+        <i class="fas fa-arrow-left mr-2"></i> Admin Dashboard
+      </button>
+		</div>
+	</header>
+
+	<main class="flex-grow flex items-center justify-center p-6">
+		<div class="max-w-4xl w-full grid md:grid-cols-5 gap-8">
+
+			<div class="md:col-span-2 space-y-6">
+				<div class="glass-card p-6 rounded-[2rem] border border-slate-200 shadow-xl">
+					<h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Neural Status</h3>
+					<div id="statusIcon" class="text-amber-500 mb-4 animate-pulse">
+						<i class="fas fa-satellite-dish text-4xl"></i>
+					</div>
+					<div id="statusText"
+						class="text-sm font-extrabold text-slate-800 uppercase tracking-tight leading-snug">
+						Initializing AI Kernels...
+					</div>
+					<div class="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+						<div id="progress" class="bg-amber-500 h-full transition-all duration-1000" style="width: 0%">
+						</div>
+					</div>
+				</div>
+
+				<div class="bg-slate-900 p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+					<i class="fas fa-shield-alt absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+					<h3 class="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em] mb-3">AI Descriptor
+						Output</h3>
+					<div id="descriptorBox"
+						class="font-mono text-[9px] text-emerald-400 opacity-80 h-32 overflow-y-auto custom-scrollbar italic leading-relaxed">
+						// Neural data stream pending extraction
+					</div>
+				</div>
+			</div>
+
+			<div class="md:col-span-3">
+				<div class="glass-card p-8 rounded-[2.5rem] border border-slate-200 shadow-2xl">
+					<form id="regForm" class="space-y-5 opacity-40 pointer-events-none transition-all duration-700">
+						<div class="grid grid-cols-2 gap-4">
+							<input type="text" id="name" placeholder="Official Name" required class="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-sm focus:border-slate-900 outline-none transition-all">
+							<input type="text" id="roll" placeholder="Roll / ID Number" required class="bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-sm focus:border-slate-900 outline-none transition-all">
+            </div>
+							<input type="email" id="email" placeholder="Institutional Email Address" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-sm focus:border-slate-900 outline-none transition-all">
+
+							<div class="relative group">
+								<label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Upload Biometric Source</label>
+								<input type="file" id="imageInput" accept="image/*" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-4 file:px-8 file:rounded-2xl file:border-0 file:text-xs file:font-black file:bg-slate-900 file:text-white hover:file:bg-black file:transition-all cursor-pointer">
+            </div>
+
+								<div id="feedback"
+									class="p-4 bg-slate-100 rounded-2xl text-[11px] font-bold text-slate-600 uppercase tracking-tighter flex items-center">
+									<i class="fas fa-info-circle mr-3 text-slate-400"></i>
+									<span id="msgContent">Stabilization Required Before Use</span>
+								</div>
+
+								<button type="submit" id="submitBtn" disabled class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-black py-5 rounded-[1.5rem] uppercase tracking-widest text-sm shadow-xl shadow-amber-200 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none transition-all">
+              Verify and Enroll Candidate
+            </button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<footer class="p-8 text-center border-t border-slate-200 bg-white">
+		<p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face
+			Detecting Attendance System</p>
+	</footer>
+
+	<script>
+		(function() {
+      "use strict";
+
+      const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+      const statusText = document.getElementById("statusText");
+      const statusIcon = document.getElementById("statusIcon");
+      const regForm = document.getElementById("regForm");
+      const imageInput = document.getElementById("imageInput");
+      const descriptorBox = document.getElementById("descriptorBox");
+      const submitBtn = document.getElementById("submitBtn");
+      const msgContent = document.getElementById("msgContent");
+      const progressBar = document.getElementById("progress");
+      const adminBtn = document.getElementById("adminBtn");
+
+      let descriptorData = null;
+
+      /** 1. AI INITIALIZATION & 60s CALIBRATION **/
+      async function initAI() {
+        try {
+          statusText.innerHTML = "Loading AI Models...";
+          await Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+          ]);
+          startStabilization(60);
+        } catch (e) {
+          statusText.innerText = "CRITICAL FAILURE: Neural Link Offline";
+          statusIcon.innerHTML = '<i class="fas fa-exclamation-triangle text-rose-500"></i>';
+        }
+      }
+
+      function startStabilization(seconds) {
+        let timeLeft = seconds;
+        const interval = setInterval(() => {
+          const percent = ((60 - timeLeft) / 60) * 100;
+          progressBar.style.width = percent + "%";
+          statusText.innerHTML = "System Calibrating... <br><span class='text-amber-600 font-black'>" + timeLeft + "s Remaining</span>";
+          statusIcon.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+
+          timeLeft--;
+          if (timeLeft < 0) {
+            clearInterval(interval);
+            activateSystem();
+          }
+        }, 1000);
+      }
+
+      function activateSystem() {
+        statusText.innerHTML = "REGISTRATION TERMINAL ACTIVE";
+        statusText.className = "text-sm font-black text-emerald-600 uppercase tracking-tight";
+        statusIcon.innerHTML = '<i class="fas fa-check-circle text-emerald-500 text-4xl"></i>';
+        regForm.classList.remove("opacity-40", "pointer-events-none");
+        msgContent.innerText = "Awaiting Biometric Data Upload";
+      }
+
+      /** 2. BIOMETRIC VECTOR EXTRACTION **/
+      imageInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        submitBtn.disabled = true;
+        descriptorBox.innerText = "// Initializing extraction kernel...";
+        msgContent.innerText = "Analyzing Facial Geometry...";
+
+        const img = await faceapi.bufferToImage(file);
+
+        try {
+          const result = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+
+          if (!result) {
+            descriptorBox.innerText = "// NO CLEAR BIOMETRICS DETECTED";
+            msgContent.innerText = "ERROR: Face not found. Use a clear frontal portrait.";
+            return;
+          }
+
+          descriptorData = Array.from(result.descriptor);
+          descriptorBox.innerText = "BIOMETRIC ENCRYPTED SUCCESSFULLY\nNeural Link Established\nVector Data encrypted & ready to store  in registry";
+          msgContent.innerText = "IDENTITY VERIFIED. READY FOR ENROLLMENT.";
+          submitBtn.disabled = false;
+
+        } catch (err) {
+          msgContent.innerText = "Internal neural processing error.";
+        }
+      });
+
+      /** 3. DATABASE ENROLLMENT **/
+      regForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        if (!descriptorData) return;
+
+        submitBtn.disabled = true;
+        msgContent.innerText = "ENROLLING CANDIDATE TO REGISTRY...";
+
+        const payload = {
+          name: document.getElementById("name").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          roll: document.getElementById("roll").value.trim(),
+          descriptor: JSON.stringify(descriptorData)
+        };
+
+        google.script.run
+          .withSuccessHandler(() => {
+            msgContent.innerText = " ENROLLMENT SUCCESSFUL";
+            msgContent.style.color = "green";
+            regForm.reset();
+            descriptorBox.innerText = "// Neural data stream pending extraction";
+            descriptorData = null;
+            setTimeout(() => {
+              msgContent.innerText = "Ready for Next Enrollment";
+            }, 5000);
+          })
+          .withFailureHandler((err) => {
+            alert("Registry Conflict: " + err.message);
+            submitBtn.disabled = false;
+          })
+          .appendData(payload);
+      });
+
+      adminBtn.addEventListener("click", function() {
+        google.script.run.withSuccessHandler(html => {
+          document.open();
+          document.write(html);
+          document.close();
+        }).loadPage("AdminDashboard");
+      });
+
+      // Entry Point
+      window.addEventListener('load', initAI);
+
+    })();
+	</script>
+</body>
+
+</html>
