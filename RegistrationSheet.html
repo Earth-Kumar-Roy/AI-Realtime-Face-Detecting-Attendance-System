@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biometric Registry | Enrollment Audit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+    }
+
+    .gov-header {
+      background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+      border-bottom: 4px solid #fbbf24;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    .sticky-header th {
+      position: sticky;
+      top: 0;
+      background-color: #0f172a !important;
+      color: white !important;
+      z-index: 10;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 20px;
+    }
+
+    .status-enrolled {
+      color: #065f46;
+      font-weight: 900;
+      background: #d1fae5;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 10px;
+      border: 1px solid #6ee7b7;
+    }
+  </style>
+</head>
+
+<body class="pb-12">
+
+  <header class="gov-header text-white p-5 shadow-xl mb-8">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <div class="bg-white p-2 rounded-lg shadow-inner">
+          <i class="fas fa-id-card text-blue-900 text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-black uppercase tracking-tighter">Registration Audit</h1>
+          <p class="text-[10px] text-amber-400 font-bold tracking-[0.3em] uppercase">Face Identity Database Management</p>
+        </div>
+      </div>
+      <button onclick="window.regModule.goBack()" class="bg-amber-500 hover:bg-amber-600 text-blue-900 px-6 py-2 rounded-lg text-xs font-black uppercase shadow-lg transition-all">
+        <i class="fas fa-arrow-left mr-2"></i> Admin Dashboard
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4">
+    <div class="table-container">
+      <div class="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
+        <div>
+          <h2 class="text-lg font-black text-slate-800 uppercase italic">Verified Candidate Profiles</h2>
+          <p class="text-[11px] text-slate-500 font-medium tracking-tight">Viewing core identity data. Neural descriptors are secured in the central registry.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div id="enrollCount" class="bg-blue-900 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase">
+            Total Enrolled: --
+          </div>
+          <button class="bg-white border-2 border-slate-200 hover:border-slate-900 text-slate-900 px-6 py-2 rounded-xl text-xs font-black uppercase transition-all" onclick="window.regModule.loadRegistry()">
+            <i class="fas fa-sync-alt mr-2"></i> Sync Registry
+          </button>
+        </div>
+      </div>
+
+      <div id="registry-wrapper" class="p-6">
+        <div class="flex flex-col items-center justify-center py-24" id="loader">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-amber-500 mb-4"></div>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Accessing Registry Records...</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse" id="registryTable" style="display:none;">
+            <thead class="sticky-header">
+              <tr>
+                <th class="border-r border-slate-700/30">Name</th>
+                <th class="border-r border-slate-700/30">Email Address</th>
+                <th class="border-r border-slate-700/30">Roll No.</th>
+                <th>Security Status</th>
+              </tr>
+            </thead>
+            <tbody id="registryBody" class="text-slate-700 font-semibold text-sm divide-y divide-slate-100">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-12 text-center text-slate-400">
+    <p class="text-[9px] font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face Detecting Attendance System</p>
+  </footer>
+
+  <script>
+
+    (function(window, document) {
+      "use strict";
+
+      const regModule = {};
+
+      regModule.loadRegistry = function() {
+        showLoader(true);
+        google.script.run
+          .withSuccessHandler(regModule.renderRegistry)
+          .withFailureHandler(showError)
+          .getRegistrationData();
+      };
+
+      regModule.renderRegistry = function(data) {
+        if (!data || data.length <= 1) {
+          document.getElementById('registry-wrapper').innerHTML = `
+            <div class="text-center py-20">
+              <i class="fas fa-folder-open text-4xl text-slate-200 mb-4"></i>
+              <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Registry is currently empty.</p>
+            </div>`;
+          return;
+        }
+
+        document.getElementById('enrollCount').innerText = `Total Enrolled: ${data.length - 1}`;
+        const body = document.getElementById('registryBody');
+        body.innerHTML = "";
+
+        // Indices: 0: Name, 1: Email, 2: Roll, 4: Status (Skip 3: Vector)
+        for (let i = 1; i < data.length; i++) {
+          const student = data[i];
+          let rowHtml = `
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="p-5 border-r border-slate-100 uppercase tracking-tighter text-blue-900">${student[0] || "---"}</td>
+              <td class="p-5 border-r border-slate-100 text-slate-500 font-normal lowercase">${student[1] || "---"}</td>
+              <td class="p-5 border-r border-slate-100 font-mono text-xs">${student[2] || "---"}</td>
+              <td class="p-5">
+                <span class="status-enrolled">
+                  <i class="fas fa-shield-check mr-2"></i>${student[4] || "ENROLLED"}
+                </span>
+              </td>
+            </tr>
+          `;
+          body.insertAdjacentHTML('beforeend', rowHtml);
+        }
+
+        showLoader(false);
+      };
+
+      function showLoader(isLoading) {
+        const loader = document.getElementById('loader');
+        const table = document.getElementById('registryTable');
+        if (loader) loader.style.display = isLoading ? 'flex' : 'none';
+        if (table) table.style.display = isLoading ? 'none' : 'table';
+      }
+
+      function showError(error) {
+        alert("REGISTRY ACCESS DENIED: " + error.message);
+        showLoader(false);
+      }
+
+      regModule.goBack = function() {
+        google.script.run
+          .withSuccessHandler(html => {
+            document.open(); document.write(html); document.close();
+          })
+          .loadPage("AdminDashboard");
+      };
+
+      // Export bridge
+      window.regModule = regModule;
+
+      // Auto-load on entry
+      document.addEventListener('DOMContentLoaded', regModule.loadRegistry);
+
+    })(window, document);
+  </script>
+</body>
+
+</html>
