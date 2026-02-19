@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>National Biometric Portal | Secure Admin Entry</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			background-color: #0f172a;
+			font-family: 'Inter', sans-serif;
+		}
+
+		.glass-card {
+			background: rgba(30, 41, 59, 0.7);
+			backdrop-filter: blur(20px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.step-node {
+			border-left: 2px solid #334155;
+		}
+
+		.glow-amber {
+			box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+		}
+	</style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+	<div
+		class="max-w-4xl w-full grid md:grid-cols-2 gap-0 overflow-hidden rounded-[2.5rem] shadow-2xl glass-card border-t-4 border-amber-500 glow-amber">
+
+		<div class="p-10 bg-slate-900/50 border-r border-white/5 flex flex-col justify-between">
+			<div>
+				<div class="flex items-center space-x-2 mb-8">
+					<div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+					<span class="text-[10px] text-emerald-500 font-black uppercase tracking-widest">System Online</span>
+				</div>
+
+				<h3 class="text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] mb-3">Core Terminal</h3>
+				<h1 class="text-white text-3xl font-black leading-tight mb-8">
+					AI Realtime Face Detecting <br>
+					<span class="text-amber-500">Attendance System</span>
+				</h1>
+
+				<h2
+					class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mb-6 border-b border-slate-800 pb-2">
+					Security Protocol</h2>
+
+				<div class="space-y-6">
+					<div class="step-node pl-6 relative">
+						<div
+							class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-700">
+						</div>
+						<h4 class="text-white text-xs font-bold uppercase">Realtime AI Verification</h4>
+						<p class="text-slate-500 text-[10px] leading-relaxed">Deploys an AI face verifying layer for
+							instantaneous attendance tracking in live environments.</p>
+					</div>
+					<div class="step-node pl-6 relative border-transparent">
+						<div
+							class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-500 shadow-[0_0_15px_#f59e0b]">
+						</div>
+						<h4 class="text-white text-xs font-bold uppercase">Audit Oversight</h4>
+						<p class="text-slate-500 text-[10px] leading-relaxed">Administrative access to verified
+							attendance logs and enrollment database status.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-8 flex items-center space-x-3">
+				<i class="fas fa-microchip text-slate-600 text-xl"></i>
+				<p class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
+					Neural Processing Unit: Secured
+				</p>
+			</div>
+		</div>
+
+		<div class="p-10 flex flex-col justify-center text-center bg-slate-800/20">
+			<div
+				class="bg-amber-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-amber-500/20">
+				<i class="fas fa-fingerprint text-2xl text-slate-900"></i>
+			</div>
+
+			<h3 class="text-white text-xl font-black uppercase tracking-tighter mb-1">Administrative Login</h3>
+			<p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-10">Credential Verification
+				Required</p>
+
+			<div class="space-y-4">
+				<div class="relative group">
+					<i class="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm group-focus-within:text-amber-500 transition-colors"></i>
+					<input type="password" id="passkey" placeholder="Enter Security Passkey" class="w-full bg-slate-900/50 border-2 border-slate-700 p-4 pl-12 rounded-2xl text-white font-bold outline-none focus:border-amber-500 focus:bg-slate-900 transition-all text-sm">
+        </div>
+
+        <button onclick="window.authModule.attemptLogin()" id="loginBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-xl shadow-amber-500/10">
+          Authorize Entry
+        </button>
+				</div>
+
+				<div id="status" class="mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 italic">
+					Awaiting input from secure terminal...
+				</div>
+			</div>
+
+		</div>
+
+		<footer class="mt-12 text-center">
+			<p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">
+				&copy; 2026 EKR | AI Realtime Face Detecting Attendance System
+			</p>
+		</footer>
+
+<script>
+  /**
+   * ISOLATED IIFE MECHANISM
+   * Corrected to ensure Global Visibility for HTML events
+   */
+  (function (window, document) {
+    "use strict";
+
+    const authModule = {};
+
+    authModule.attemptLogin = function() {
+      const key = document.getElementById('passkey').value;
+      const btn = document.getElementById('loginBtn');
+      const status = document.getElementById('status');
+
+      if (!key) {
+        status.innerText = "Error: Passkey Required";
+        status.className = "mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 italic";
+        return;
+      }
+
+      btn.disabled = true;
+      status.innerText = "Processing Neural Authorization...";
+      status.className = "mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 animate-pulse italic";
+
+      google.script.run
+        .withSuccessHandler((isValid) => {
+          if (isValid) {
+            status.innerText = "Identity Verified. Unlocking Command Center...";
+            status.className = "mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500 italic";
+            authModule.loadPage("AdminDashboard");
+          } else {
+            status.innerText = "Verification Failed. Access Blocked.";
+            status.className = "mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 italic";
+            btn.disabled = false;
+          }
+        })
+        .withFailureHandler((err) => {
+          status.innerText = "System Error: " + err.message;
+          status.className = "mt-10 text-[9px] font-black uppercase tracking-[0.2em] text-rose-500 italic";
+          btn.disabled = false;
+        })
+        .verifyAdminLogin(key);
+    };
+
+    authModule.loadPage = function(pageName) {
+      google.script.run
+        .withSuccessHandler(html => {
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .loadPage(pageName);
+    };
+
+    // Exporting to window object to satisfy the onclick bridge
+    window.authModule = authModule;
+
+  })(window, document);
+</script>
+</body>
+
+</html>
