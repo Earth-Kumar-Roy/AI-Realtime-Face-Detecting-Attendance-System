@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Command Centre | Biometric Control</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			background-color: #f1f5f9;
+			font-family: 'Inter', sans-serif;
+		}
+
+		.dash-card {
+			transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.dash-card:hover {
+			transform: translateY(-8px);
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		}
+
+		.gov-sidebar {
+			background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+		}
+
+		/* Custom glow for AI modules */
+		.ai-glow {
+			box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+		}
+	</style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row">
+
+	<aside class="md:w-80 gov-sidebar text-white p-8 flex flex-col justify-between shadow-2xl z-10">
+		<div>
+			<div class="flex items-center space-x-3 mb-10 border-b border-white/10 pb-6">
+				<i class="fas fa-shield-check text-amber-500 text-3xl"></i>
+				<h1 class="text-xl font-black uppercase tracking-tighter italic">Admin <br>Dashboard</h1>
+			</div>
+
+			<div class="space-y-8">
+				<div>
+					<h3 class="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3">System
+						Prerequisites</h3>
+					<ul class="space-y-3 text-[11px] font-medium text-slate-400">
+						<li class="flex items-start"><i class="fas fa-camera-web mr-2 mt-1 text-slate-200"></i> High-Res
+							Camera Module</li>
+						<li class="flex items-start"><i class="fas fa-wifi mr-2 mt-1 text-slate-200"></i> Stable
+							Bi-directional Link</li>
+						<li class="flex items-start"><i class="fas fa-microchip mr-2 mt-1 text-slate-200"></i>
+							GPU/Neural Acceleration</li>
+					</ul>
+				</div>
+
+				<div>
+					<h3 class="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3">Technical
+						Definition</h3>
+					<p class="text-[11px] leading-relaxed text-slate-400 italic">
+						This infrastructure utilizes <strong>Face-API.js</strong> and
+						<strong>KD-Tree Spatial Clustering</strong> to automate attendance verification via
+						128-dimensional biometric mapping.
+					</p>
+				</div>
+
+				
+			</div>
+		</div>
+	</aside>
+
+	<div class="flex-grow flex flex-col">
+		<header
+			class="bg-white p-6 shadow-sm border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
+			<h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Administrative Module Selection
+			</h2>
+			<button onclick="window.dashboardModule.logout()" class="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 px-6 py-3 rounded-xl transition-all border border-rose-100 shadow-sm active:scale-95">
+        Terminate Session <i class="fas fa-sign-out-alt ml-2"></i>
+      </button>
+		</header>
+
+		<main class="p-8 md:p-12 overflow-y-auto">
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+				<div onclick="window.dashboardModule.navigate('Registration')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group relative overflow-hidden">
+					<div
+						class="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-all">
+						<i class="fas fa-user-plus text-2xl text-blue-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Enrollment Unit
+					</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Capture biometric geometry and
+						append candidate data to the neural registry.</p>
+					<div class="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center">
+						Initialize Terminal <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+				<div onclick="window.dashboardModule.navigate('Attendance')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group">
+					<div
+						class="bg-emerald-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 transition-all">
+						<i class="fas fa-video text-2xl text-emerald-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Attendance
+						Gateway</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Deploy realtime AI face verifying
+						layer for instantaneous identity verification.</p>
+					<div class="text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center">
+						Launch Scanner <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+				<div onclick="window.dashboardModule.navigate('UserAnalysis')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group">
+					<div
+						class="bg-amber-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-600 transition-all">
+						<i class="fas fa-chart-line text-2xl text-amber-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Neural
+						Analytics</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Individual candidate trend
+						forecasting and consistency scoring modules.</p>
+					<div class="text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center">
+						Open Analysis <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+				<div onclick="window.dashboardModule.navigate('Analytics')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group ai-glow">
+					<div
+						class="bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition-all">
+						<i class="fas fa-brain text-2xl text-indigo-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Global Audit
+					</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Macro-level ML clustering, risk
+						assessment, and system-wide suggestor.</p>
+					<div class="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center">
+						Run Global Audit <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+				<div onclick="window.dashboardModule.navigate('AttendanceSheet')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group">
+					<div
+						class="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-slate-900 transition-all">
+						<i class="fas fa-table-list text-2xl text-slate-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Attendance Logs
+					</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Audit central attendance records
+						with formatted (MM/DD/YYYY) timestamps.</p>
+					<div class="text-[9px] font-black text-slate-900 uppercase tracking-widest flex items-center">
+						View Records <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+				<div onclick="window.dashboardModule.navigate('RegistrationSheet')"
+					class="dash-card bg-white p-8 rounded-[2.5rem] border border-slate-200 cursor-pointer group">
+					<div
+						class="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-slate-900 transition-all">
+						<i class="fas fa-database text-2xl text-slate-600 group-hover:text-white transition-all"></i>
+					</div>
+					<h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2 italic">Registry Audit
+					</h2>
+					<p class="text-[11px] text-slate-500 leading-relaxed italic mb-6">Manage the biometric enrollment
+						database and verify identity status.</p>
+					<div class="text-[9px] font-black text-slate-900 uppercase tracking-widest flex items-center">
+						Open Registry <i class="fas fa-chevron-right ml-2"></i>
+					</div>
+				</div>
+
+			</div>
+		</main>
+
+		<footer class="p-6 text-center border-t border-slate-100 bg-slate-50 mt-auto">
+			<p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.4em]">
+				&copy; 2026 EKR | AI Realtime Face Detecting Attendance System
+			</p>
+		</footer>
+	</div>
+
+	<script>
+		/**
+     * ISOLATED IIFE MECHANISM: DASHBOARD NAVIGATION MODULE
+     * Encapsulates logic and bridges to global window object.
+     */
+    (function (window, document) {
+      "use strict";
+
+      const dashboardModule = {};
+
+      /**
+       * Primary Navigation Handler
+       * Communicates with google.script.run to swap HTML content
+       */
+      dashboardModule.navigate = function (page) {
+        google.script.run
+          .withSuccessHandler(html => {
+            document.open();
+            document.write(html);
+            document.close();
+          })
+          .withFailureHandler(err => {
+            console.error("Navigation error:", err.message);
+            alert("Terminal Error: Check Cloud Console Logs.");
+          })
+          .loadPage(page);
+      };
+
+      /**
+       * Session Termination
+       */
+      dashboardModule.logout = function () {
+        google.script.run
+          .withSuccessHandler(html => {
+            document.open();
+            document.write(html);
+            document.close();
+          })
+          .loadPage("AdminLogin");
+      };
+
+      // Export bridge for onclick attributes
+      window.dashboardModule = dashboardModule;
+
+    })(window, document);
+	</script>
+</body>
+
+</html>
