@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Neural Analytics Engine | Biometric Portal</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+			background-color: #0f172a;
+			color: white;
+		}
+
+		.glass-panel {
+			background: rgba(30, 41, 59, 0.7);
+			backdrop-filter: blur(12px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.stat-card {
+			border-left: 4px solid #fbbf24;
+			background: rgba(15, 23, 42, 0.5);
+		}
+
+		.trend-up {
+			color: #10b981;
+		}
+
+		.trend-down {
+			color: #f43f5e;
+		}
+
+		canvas {
+			max-height: 400px;
+			width: 100% !important;
+		}
+	</style>
+</head>
+
+<body class="min-h-screen p-6">
+
+	<header class="max-w-7xl mx-auto flex justify-between items-center mb-10 pb-6 border-b border-white/10">
+		<div class="flex items-center space-x-4">
+			<div class="bg-amber-500 p-3 rounded-2xl shadow-lg shadow-amber-500/20">
+				<i class="fas fa-chart-network text-slate-900 text-2xl"></i>
+			</div>
+			<div>
+				<h1 class="text-2xl font-black uppercase tracking-tighter">Neural Analytics Hub</h1>
+				<p class="text-[10px] text-amber-500 font-bold tracking-[0.3em] uppercase">ML-Powered Attendance
+					Forecasting</p>
+			</div>
+		</div>
+		<button onclick="window.analyticsModule.goBack()" class="bg-white/5 hover:bg-white/10 border border-white/20 px-6 py-2 rounded-xl text-xs font-black uppercase transition-all">
+      <i class="fas fa-arrow-left mr-2"></i> Dashboard
+    </button>
+	</header>
+
+	<main class="max-w-7xl mx-auto space-y-8">
+
+		<div class="glass-panel p-6 rounded-[2rem] flex flex-wrap gap-6 items-end">
+			<div class="space-y-2">
+				<label class="text-[10px] font-black uppercase text-slate-400 ml-2">Select Target Year</label>
+				<select id="yearPicker" class="bg-slate-800 border-none text-white p-3 rounded-xl w-40 font-bold outline-none ring-2 ring-white/5 focus:ring-amber-500">
+          <option value="2026">FY 2026</option>
+          <option value="2025">FY 2025</option>
+        </select>
+			</div>
+			<div class="space-y-2 flex-grow">
+				<label class="text-[10px] font-black uppercase text-slate-400 ml-2">Candidate Identifier (Roll No.)</label>
+				<input type="text" id="rollSearch" placeholder="Enter Roll Number for Individual Analysis..." class="w-full bg-slate-800 border-none text-white p-3 rounded-xl font-bold outline-none ring-2 ring-white/5 focus:ring-amber-500">
+      </div>
+				<button onclick="window.analyticsModule.processAnalysis()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-8 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all">
+        Execute Analysis
+      </button>
+			</div>
+
+			<div id="identityStrip"
+				class="hidden glass-panel p-4 px-8 rounded-2xl border-l-4 border-amber-500 flex items-center justify-between">
+				<div class="flex items-center space-x-6">
+					<div
+						class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+						<i class="fas fa-user-tie text-amber-500"></i>
+					</div>
+					<div>
+						<h2 id="displayName" class="text-xl font-black uppercase tracking-tight italic">--</h2>
+						<p id="displayRoll" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID
+							NO: --</p>
+					</div>
+				</div>
+				<div class="text-right">
+					<span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+             Identity Verified
+          </span>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div class="stat-card p-6 rounded-2xl">
+					<h4 class="text-slate-400 text-[10px] font-black uppercase">Annual Attendance Rate</h4>
+					<div class="text-3xl font-black mt-2" id="annualRate">--%</div>
+				</div>
+				<div class="stat-card p-6 rounded-2xl border-emerald-500">
+					<h4 class="text-slate-400 text-[10px] font-black uppercase">Annual Working Days</h4>
+					<div class="text-3xl font-black mt-2" id="totalWorkingDays">--</div>
+				</div>
+				<div class="stat-card p-6 rounded-2xl border-blue-500">
+					<h4 class="text-slate-400 text-[10px] font-black uppercase">ML Prediction (Next Month)</h4>
+					<div class="text-3xl font-black mt-2 italic" id="mlPrediction">Waiting...</div>
+				</div>
+			</div>
+
+			<div class="glass-panel p-8 rounded-[2.5rem]">
+				<h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center">
+					<i class="fas fa-microchip mr-2 text-amber-500"></i> Neural Trend Analysis
+				</h3>
+				<canvas id="attendanceChart"></canvas>
+			</div>
+
+			<div class="glass-panel rounded-[2.5rem] overflow-hidden">
+				<table class="w-full text-left">
+					<thead class="bg-white/5 text-[10px] font-black uppercase text-slate-400 border-b border-white/5">
+						<tr>
+							<th class="p-6">Month Identifier</th>
+							<th class="p-6">Working Days</th>
+							<th class="p-6">Attended Sessions</th>
+							<th class="p-6">Consistency Score</th>
+							<th class="p-6">Trend</th>
+						</tr>
+					</thead>
+					<tbody id="analysisTableBody" class="divide-y divide-white/5 text-sm font-bold">
+					</tbody>
+				</table>
+			</div>
+
+  <footer class="p-8 text-center border-t border-slate-200 bg-white">
+		<p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face
+			Detecting Attendance System</p>
+	</footer>
+
+	</main>
+
+	<script>
+		(function(window, document) {
+      "use strict";
+
+      const analyticsModule = {};
+      let chartInstance = null;
+
+      analyticsModule.processAnalysis = function() {
+        const roll = document.getElementById('rollSearch').value.trim();
+        if (!roll) { alert("Roll Number Required"); return; }
+        google.script.run
+          .withSuccessHandler(analyticsModule.renderAnalysis)
+          .getAttendanceDataforAnalysis(); 
+      };
+
+      analyticsModule.renderAnalysis = function(data) {
+        if (!data || data.length < 2) return;
+        
+        const rollNo = document.getElementById('rollSearch').value.trim();
+        const year = document.getElementById('yearPicker').value;
+        const headers = data[0]; 
+        const studentIndex = data.findIndex(row => row[2] === rollNo);
+        
+        if (studentIndex === -1) { 
+           alert("Candidate not found in registry"); 
+           document.getElementById('identityStrip').classList.add('hidden');
+           return; 
+        }
+
+        const studentData = data[studentIndex];
+        
+        // DISPLAY NAME & IDENTITY
+        document.getElementById('displayName').innerText = studentData[0]; // Index 0 is Name
+        document.getElementById('displayRoll').innerText = "ID NO: " + studentData[2]; // Index 2 is Roll
+        document.getElementById('identityStrip').classList.remove('hidden');
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let monthlyStats = monthNames.map(() => ({ working: 0, attended: 0 }));
+
+        headers.forEach((header, idx) => {
+          if (idx < 3) return; 
+          const dateParts = header.split('/'); 
+          if (dateParts[2] === year) {
+            const monthIdx = parseInt(dateParts[0]) - 1;
+            monthlyStats[monthIdx].working++;
+            const cellVal = String(studentData[idx] || "");
+            if (cellVal === "P" || cellVal.includes(":")) {
+              monthlyStats[monthIdx].attended++;
+            }
+          }
+        });
+
+        const tbody = document.getElementById('analysisTableBody');
+        tbody.innerHTML = "";
+        let totalAttend = 0, totalWork = 0;
+        let chartLabels = [], chartData = [];
+
+        monthlyStats.forEach((stat, i) => {
+          const rate = stat.working > 0 ? ((stat.attended / stat.working) * 100) : 0;
+          totalAttend += stat.attended;
+          totalWork += stat.working;
+          
+          if(stat.working > 0) {
+            chartLabels.push(monthNames[i]);
+            chartData.push(rate.toFixed(1));
+          }
+
+          const trendIcon = rate >= 75 ? 'fa-arrow-trend-up trend-up' : 'fa-arrow-trend-down trend-down';
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition-colors">
+              <td class="p-6 text-amber-500">${monthNames[i]} ${year}</td>
+              <td class="p-6">${stat.working}</td>
+              <td class="p-6">${stat.attended}</td>
+              <td class="p-6">${rate.toFixed(0)}%</td>
+              <td class="p-6"><i class="fas ${trendIcon}"></i></td>
+            </tr>
+          `;
+        });
+
+        const annualPct = totalWork > 0 ? ((totalAttend / totalWork) * 100).toFixed(1) : 0;
+        document.getElementById('annualRate').innerText = annualPct + "%";
+        document.getElementById('totalWorkingDays').innerText = totalWork;
+        
+        if (chartData.length > 1) {
+          const n = chartData.length;
+          const last = parseFloat(chartData[n-1]);
+          const prev = parseFloat(chartData[n-2]);
+          const prediction = last + (last - prev); 
+          document.getElementById('mlPrediction').innerText = Math.min(100, Math.max(0, prediction)).toFixed(0) + "% Exp.";
+        } else {
+          document.getElementById('mlPrediction').innerText = "Insuff. Data";
+        }
+
+        analyticsModule.initChart(chartLabels, chartData);
+      };
+
+      analyticsModule.initChart = function(labels, data) {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Attendance Consistency %',
+              data: data,
+              borderColor: '#fbbf24',
+              backgroundColor: 'rgba(251, 191, 36, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: '#fbbf24'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+              x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+          }
+        });
+      };
+
+      analyticsModule.goBack = function() {
+        google.script.run.withSuccessHandler(html => {
+          document.open(); document.write(html); document.close();
+        }).loadPage("AdminDashboard");
+      };
+
+      window.analyticsModule = analyticsModule;
+    })(window, document);
+	</script>
+</body>
+
+</html>
