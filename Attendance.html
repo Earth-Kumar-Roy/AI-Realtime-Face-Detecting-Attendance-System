@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Biometric Attendance Portal</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs" crossorigin="anonymous"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+		}
+
+		.gov-header {
+			background: linear-gradient(90deg, #002147 0%, #003366 100%);
+		}
+
+		.active-guide {
+			stroke: #fbbf24 !important;
+			stroke-width: 6;
+			filter: drop-shadow(0 0 15px #fbbf24);
+			transition: 0.5s;
+		}
+
+		video {
+			transform: scaleX(-1);
+			filter: grayscale(20%) contrast(110%);
+		}
+
+		.lockdown {
+			pointer-events: none !important;
+			opacity: 0.5;
+			filter: grayscale(100%);
+		}
+
+		.scanning-line {
+			height: 3px;
+			background: #fbbf24;
+			position: absolute;
+			width: 100%;
+			top: 0;
+			animation: scan 4s linear infinite;
+			opacity: 0.4;
+		}
+
+		@keyframes scan {
+			0% {
+				top: 0%;
+			}
+
+			50% {
+				top: 100%;
+			}
+
+			100% {
+				top: 0%;
+			}
+		}
+
+		#confirmOverlay {
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(4px);
+		}
+
+		.threat-detected {
+			border: 12px solid #ef4444 !important;
+			animation: pulse-red 1s infinite;
+		}
+
+		@keyframes pulse-red {
+			0% {
+				box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.5);
+			}
+
+			50% {
+				box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.8);
+			}
+
+			100% {
+				box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.5);
+			}
+		}
+
+		.detection-badge {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			background: rgba(0, 0, 0, 0.85);
+			padding: 8px 14px;
+			border-radius: 10px;
+			font-size: 10px;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			z-index: 45;
+			transition: all 0.2s;
+		}
+
+		.badge-safe {
+			color: #10b981;
+			border: 2px solid #10b981;
+		}
+
+		.badge-warning {
+			color: #f59e0b;
+			border: 2px solid #f59e0b;
+		}
+
+		.badge-danger {
+			color: #ef4444;
+			border: 2px solid #ef4444;
+			animation: badge-pulse 0.8s infinite;
+		}
+
+		@keyframes badge-pulse {
+			0%,
+			100% {
+				opacity: 1;
+			}
+
+			50% {
+				opacity: 0.7;
+			}
+		}
+	</style>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+
+	<div id="confirmOverlay" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+		<div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border-t-4 border-amber-500">
+			<h3 class="text-blue-900 font-black uppercase text-lg mb-2">Final Verification</h3>
+			<p class="text-slate-600 text-sm mb-6">Are you sure? Once you "Proceed", the system will Lock all inputs and
+				the Back button. You will be unable to modify the closing time or exit the session until the process is
+				complete. The selected closing time is:
+				<span id="selectedTimeDisplay" class="font-black text-blue-900">--:--</span>
+			</p>
+			<div class="flex space-x-3">
+				<button onclick="closeConfirm()"
+					class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold uppercase text-xs">Cancel</button>
+				<button onclick="finalProceed()"
+					class="flex-1 px-4 py-3 bg-blue-900 text-white rounded-xl font-bold uppercase text-xs">Proceed</button>
+			</div>
+		</div>
+	</div>
+
+	<header class="gov-header text-white p-4 shadow-xl border-b-4 border-amber-500">
+		<div class="max-w-7xl mx-auto flex justify-between items-center">
+			<div class="flex items-center space-x-4">
+				<div class="bg-white p-2 rounded-full shadow-inner">
+					<i class="fas fa-shield-halved text-blue-900 text-3xl"></i>
+				</div>
+				<div>
+					<h1 class="text-xl font-black uppercase tracking-tighter">AI Realtime Face Detecting Attendance
+						System</h1>
+					<div id="masterClock" class="text-amber-400 font-mono text-sm font-bold">00:00:00</div>
+				</div>
+			</div>
+			<div class="flex items-center space-x-4">
+				<div id="loadingStatus"
+					class="bg-blue-900/50 px-4 py-2 rounded-lg border border-blue-700 text-xs font-black uppercase text-blue-200 tracking-widest animate-pulse">
+					<i class="fas fa-microchip mr-2"></i> Initializing AI Engine...
+				</div>
+				<button id="backBtn" onclick="goBack()"
+					class="bg-amber-500 hover:bg-amber-600 text-blue-900 px-6 py-2 rounded text-xs font-black uppercase shadow-lg transition-all">
+					<i class="fas fa-arrow-left mr-2"></i> Back
+				</button>
+			</div>
+		</div>
+	</header>
+
+	<main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
+		<div class="lg:col-span-1 space-y-6">
+			<div id="configPanel" class="bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+				<h3 class="text-xs font-black uppercase tracking-widest text-blue-900 mb-6 border-b pb-2">Session
+					Authorization</h3>
+				<div class="space-y-5">
+					<div>
+						<label class="text-[10px] uppercase font-black text-slate-500 block mb-1">System Date</label>
+						<div id="displayDate" class="w-full bg-slate-100 border p-3 rounded-xl font-bold text-slate-700 text-sm">
+							--/--/----</div>
+					</div>
+					<div>
+						<label class="text-[10px] uppercase font-black text-slate-500 block mb-1">Closing Time
+							(Strict)</label>
+						<input type="time" id="attTime"
+							class="w-full bg-slate-50 border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-blue-900 transition-all">
+					</div>
+					<div>
+						<label class="text-[10px] uppercase font-black text-slate-500 block mb-1">Authorization Key</label>
+						<input type="password" id="adminCode" placeholder="Enter Access Code"
+							class="w-full bg-slate-50 border-2 border-slate-200 p-3 rounded-xl font-bold outline-none focus:border-blue-900 transition-all">
+					</div>
+					<button id="startBtn" onclick="verifyAndStart()"
+						class="w-full bg-blue-900 hover:bg-black text-white font-black py-4 rounded-xl uppercase transition-all text-xs shadow-xl disabled:bg-slate-300">
+						Initialize Session
+					</button>
+				</div>
+			</div>
+
+			<div class="bg-blue-900 p-6 rounded-2xl shadow-xl text-white">
+				<h3 class="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-4 flex items-center">
+					<i class="fas fa-list-ul mr-2"></i> Access Logs
+				</h3>
+				<div id="logBox"
+					class="text-[10px] font-mono space-y-2 h-48 overflow-y-auto pr-2 custom-scrollbar opacity-80 italic">
+					> Awaiting AI stabilization...
+				</div>
+			</div>
+		</div>
+
+		<div class="lg:col-span-3 space-y-6">
+			<div id="videoContainer"
+				class="relative bg-slate-800 rounded-[2.5rem] overflow-hidden border-[12px] border-slate-800 shadow-2xl transition-all">
+				<video id="video" autoplay muted playsinline class="w-full aspect-video object-cover"></video>
+				<div class="scanning-line"></div>
+				<div id="detectionBadge" class="detection-badge badge-safe" style="display:none;">
+					<i class="fas fa-shield-check mr-1"></i> SECURE
+				</div>
+				<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+					<div id="countdown"
+						class="hidden text-[12rem] font-black text-amber-400 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-30 italic">
+						3</div>
+					<svg id="guideSvg" class="w-[50%] h-[65%] stroke-green-500 fill-none" viewBox="0 0 100 100">
+						<path d="M50,12 C30,12 15,25 15,50 C15,75 30,88 50,88 C70,88 85,75 85,50 C85,25 70,12 50,12 Z"
+							stroke-dasharray="2 4" />
+					</svg>
+				</div>
+				<div
+					class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent p-10 text-center">
+					<p id="instruction" class="text-amber-400 font-black uppercase tracking-[0.4em] text-sm">
+						System Locked: Initializing Kernels</p>
+				</div>
+			</div>
+
+			<div id="resultBox"
+				class="p-10 rounded-[2rem] bg-white border-b-8 border-slate-300 text-center transition-all duration-700 shadow-2xl">
+				<p id="statusTag" class="text-slate-400 uppercase tracking-widest text-[10px] font-black mb-2 italic">Gateway
+					Status</p>
+				<h2 id="resultText" class="text-4xl font-black uppercase tracking-tighter text-blue-900 italic">
+					Standby Mode</h2>
+			</div>
+		</div>
+	</main>
+
+	<footer class="my-10 text-center text-slate-400">
+		<p class="text-[9px] font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face Detecting Attendance
+			System</p>
+	</footer>
+
+	<script type="module">
+		import { ObjectDetector, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+		(function () {
+			"use strict";
+
+			const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+			let objectDetector;
+			let kdTreeRoot = null;
+			let presentRolls = new Map(); // CHANGED: Use Map instead of Set
+			let isSessionActive = false;
+			let isProcessingFace = false;
+
+			// BALANCED DETECTION CONFIG
+			let phoneDetectionBuffer = [];
+			const BUFFER_SIZE = 4;
+			const DETECTION_CONFIDENCE = 0.35;
+			const THREAT_RATIO = 0.5;
+			const SAFE_RATIO = 0.25;
+			const CLOSE_RANGE_MULTIPLIER = 0.30;
+			let lastThreatTime = 0;
+			let scanLoopActive = false;
+			let clearFrameCount = 0;
+
+			// FACE SIZE VALIDATION (to prevent too-close/zoomed faces)
+			const MIN_FACE_SIZE = 0.15; // Face must be at least 15% of video
+			const MAX_FACE_SIZE = 0.65; // Face must not exceed 65% of video (TOO CLOSE = PHONE)
+
+			// Clock logic
+			setInterval(() => {
+				document.getElementById('masterClock').innerText = new Date().toLocaleTimeString('en-GB');
+			}, 1000);
+
+			function buildKDTree(points, depth = 0) {
+				if (points.length === 0) return null;
+				const axis = depth % 128;
+				points.sort((a, b) => a.descriptor[axis] - b.descriptor[axis]);
+				const median = Math.floor(points.length / 2);
+				return {
+					point: points[median],
+					left: buildKDTree(points.slice(0, median), depth + 1),
+					right: buildKDTree(points.slice(median + 1), depth + 1)
+				};
+			}
+
+			function findNearest(node, target, depth = 0, best = null) {
+				if (node === null) return best;
+				const axis = depth % 128;
+				const dist = faceapi.euclideanDistance(target, node.point.descriptor);
+				if (best === null || dist < best.dist) best = { point: node.point, dist: dist };
+				const nextSide = target[axis] < node.point.descriptor[axis] ? node.left : node.right;
+				const otherSide = target[axis] < node.point.descriptor[axis] ? node.right : node.left;
+				best = findNearest(nextSide, target, depth + 1, best);
+				if (Math.abs(target[axis] - node.point.descriptor[axis]) < best.dist) {
+					best = findNearest(otherSide, target, depth + 1, best);
+				}
+				return best;
+			}
+
+			async function init() {
+				toggleControls(true);
+				document.getElementById('displayDate').innerText = new Date().toLocaleDateString('en-GB', {
+					day: '2-digit',
+					month: 'long',
+					year: 'numeric'
+				});
+
+				try {
+					addLog("Initializing threat detection...");
+					const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+					objectDetector = await ObjectDetector.createFromOptions(vision, {
+						baseOptions: {
+							modelAssetPath: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite",
+							delegate: "GPU"
+						},
+						scoreThreshold: 0.30,
+						maxResults: 5,
+						runningMode: "VIDEO"
+					});
+
+					await Promise.all([
+						faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+						faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+						faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+					]);
+
+					updateMsg("Instruction", "AI Ready. Initial Stabilization (30s)...", "text-amber-500");
+					startMasterCountdown(30, () => {
+						document.getElementById('loadingStatus').innerText = "✓ System Stabilized";
+						document.getElementById('loadingStatus').className = "bg-emerald-500 px-4 py-2 rounded-lg text-xs font-black text-white tracking-widest";
+						updateMsg("Instruction", "Authorized Access Required", "text-white");
+						addLog("Anti-spoof engine ready (face size validation enabled)");
+						toggleControls(false);
+					});
+				} catch (e) {
+					addLog("Critical: AI Engine Fault");
+					console.error(e);
+				}
+			}
+
+			function toggleControls(disabled) {
+				document.getElementById('attTime').disabled = disabled;
+				document.getElementById('adminCode').disabled = disabled;
+				document.getElementById('startBtn').disabled = disabled;
+			}
+
+			window.verifyAndStart = function () {
+				const code = document.getElementById('adminCode').value;
+				const time = document.getElementById('attTime').value;
+				if (!code || !time) return alert("All fields mandatory.");
+
+				document.getElementById('selectedTimeDisplay').innerText = time;
+				document.getElementById('confirmOverlay').classList.remove('hidden');
+			};
+
+			window.closeConfirm = function () {
+				document.getElementById('confirmOverlay').classList.add('hidden');
+			};
+
+			window.finalProceed = function () {
+				const code = document.getElementById('adminCode').value;
+				const time = document.getElementById('attTime').value;
+				document.getElementById('confirmOverlay').classList.add('hidden');
+
+				updateMsg("Instruction", "Verifying Security Credentials...", "text-amber-400");
+
+				google.script.run.withSuccessHandler((authCode) => {
+					if (code === authCode) {
+						lockdownUI();
+						fetchStudentData(time);
+					} else {
+						alert("Invalid Authorization Key");
+						updateMsg("Instruction", "Access Denied", "text-rose-500");
+					}
+				}).getAdminCode();
+			};
+
+			function fetchStudentData(time) {
+				updateMsg("Instruction", "Syncing Registry...", "text-blue-200 animate-pulse");
+				google.script.run.withSuccessHandler((data) => {
+					const parsedData = data.map(item => ({
+						...item,
+						descriptor: new Float32Array(JSON.parse(item.descriptor))
+					}));
+
+					updateMsg("Instruction", "Clustering Data (45s)...", "text-amber-500");
+					startMasterCountdown(45, () => {
+						kdTreeRoot = buildKDTree(parsedData);
+						isSessionActive = true;
+						initCamera();
+						updateMsg("Instruction", "✓ Live Authentication Active", "text-emerald-400");
+						addLog(`KD-Tree optimized with ${parsedData.length} records.`);
+						checkTimeExpiry(time);
+					});
+				}).fetchData();
+			}
+
+			function startMasterCountdown(seconds, callback) {
+				let count = seconds;
+				const t = setInterval(() => {
+					updateMsg("Result", `SECURE SETUP: ${count}s`, "text-amber-600");
+					count--;
+					if (count < 0) {
+						clearInterval(t);
+						callback();
+					}
+				}, 1000);
+			}
+
+			async function initCamera() {
+				try {
+					const stream = await navigator.mediaDevices.getUserMedia({ 
+						video: { 
+							width: { ideal: 1280 },
+							height: { ideal: 720 }
+						} 
+					});
+					document.getElementById('video').srcObject = stream;
+
+					const video = document.getElementById('video');
+					video.onloadedmetadata = () => {
+						scanLoopActive = true;
+						continuousScan();
+						addLog("Live monitoring active");
+					};
+				} catch (err) {
+					addLog("Camera Access Denied");
+				}
+			}
+
+			// ENHANCED SCAN LOOP with face size validation
+			async function continuousScan() {
+				if (!isSessionActive || !scanLoopActive) return;
+
+				const videoEl = document.getElementById('video');
+				if (!videoEl || videoEl.paused || videoEl.readyState < 2) {
+					requestAnimationFrame(continuousScan);
+					return;
+				}
+
+				try {
+					// PHASE 1: Phone detection
+					const now = performance.now();
+					const detections = objectDetector.detectForVideo(videoEl, now);
+
+					let phoneDetectedNow = false;
+					let maxConfidence = 0;
+					let isCloseRange = false;
+
+					for (const detection of detections.detections) {
+						const cat = detection.categories[0];
+						const bbox = detection.boundingBox;
+
+						const isDevice = cat.categoryName === "cell phone" || cat.categoryName === "remote";
+						
+						const objWidth = bbox.width / videoEl.videoWidth;
+						const objHeight = bbox.height / videoEl.videoHeight;
+						const objSize = Math.max(objWidth, objHeight);
+
+						const effectiveThreshold = objSize > CLOSE_RANGE_MULTIPLIER 
+							? DETECTION_CONFIDENCE * 0.75
+							: DETECTION_CONFIDENCE;
+
+						if (isDevice && cat.score >= effectiveThreshold) {
+							phoneDetectedNow = true;
+							maxConfidence = Math.max(maxConfidence, cat.score);
+							if (objSize > CLOSE_RANGE_MULTIPLIER) {
+								isCloseRange = true;
+							}
+						}
+					}
+
+					// Update detection buffer
+					phoneDetectionBuffer.push(phoneDetectedNow);
+					if (phoneDetectionBuffer.length > BUFFER_SIZE) {
+						phoneDetectionBuffer.shift();
+					}
+
+					// Calculate threat level
+					const threatCount = phoneDetectionBuffer.filter(d => d).length;
+					const threatRatio = phoneDetectionBuffer.length > 0 ? threatCount / phoneDetectionBuffer.length : 0;
+					const isThreatActive = threatRatio >= THREAT_RATIO;
+
+					// Track clear frames
+					if (!phoneDetectedNow) {
+						clearFrameCount++;
+					} else {
+						clearFrameCount = 0;
+					}
+
+					// Update badge
+					updateBadge(threatRatio, maxConfidence, isCloseRange);
+
+					// Handle threat
+					if (isThreatActive) {
+						handleThreat(isCloseRange);
+						requestAnimationFrame(continuousScan);
+						return;
+					} else {
+						clearThreat();
+					}
+
+					// PHASE 2: Face detection with SIZE validation
+					const isSafeForFaceDetection = threatRatio < SAFE_RATIO || clearFrameCount >= 2;
+
+					if (!isProcessingFace && isSafeForFaceDetection) {
+						const detection = await faceapi.detectSingleFace(videoEl).withFaceLandmarks();
+						if (detection) {
+							const box = detection.detection.box;
+							
+							// Calculate face size relative to video
+							const faceWidth = box.width / videoEl.videoWidth;
+							const faceHeight = box.height / videoEl.videoHeight;
+							const faceSize = Math.max(faceWidth, faceHeight);
+
+							// CRITICAL: Face size validation
+							const isFaceSizeValid = faceSize >= MIN_FACE_SIZE && faceSize <= MAX_FACE_SIZE;
+							
+							// Check if centered
+							const isCentered = box.x > (videoEl.videoWidth * 0.3625) && 
+											  (box.x + box.width) < (videoEl.videoWidth * 0.6375);
+							
+							if (isCentered && isFaceSizeValid) {
+								document.getElementById('guideSvg').classList.add('active-guide');
+								isProcessingFace = true;
+								triggerBiometricCountdown();
+							} else {
+								document.getElementById('guideSvg').classList.remove('active-guide');
+								
+								// Give feedback if face is too large
+								if (isCentered && faceSize > MAX_FACE_SIZE) {
+									if (Date.now() - lastThreatTime > 2000) {
+										updateMsg("Instruction", "⚠ Face Too Close - Move Back", "text-orange-400");
+										lastThreatTime = Date.now();
+									}
+								}
+							}
+						}
+					}
+
+				} catch (error) {
+					console.error("Scan error:", error);
+				}
+
+				setTimeout(() => requestAnimationFrame(continuousScan), 150);
+			}
+
+			function updateBadge(ratio, confidence, isClose) {
+				const badge = document.getElementById('detectionBadge');
+				badge.style.display = 'block';
+
+				if (ratio >= THREAT_RATIO) {
+					badge.className = 'detection-badge badge-danger';
+					const rangeText = isClose ? " [CLOSE]" : "";
+					badge.innerHTML = `<i class="fas fa-ban mr-1"></i> THREAT ${(confidence * 100).toFixed(0)}%${rangeText}`;
+				} else if (ratio > 0) {
+					badge.className = 'detection-badge badge-warning';
+					badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> MONITORING`;
+				} else {
+					badge.className = 'detection-badge badge-safe';
+					badge.innerHTML = `<i class="fas fa-shield-check mr-1"></i> SECURE`;
+				}
+			}
+
+			function handleThreat(isClose) {
+				isProcessingFace = false;
+				clearFrameCount = 0;
+				document.getElementById('countdown').style.display = 'none';
+				document.getElementById('videoContainer').classList.add('threat-detected');
+				document.getElementById('guideSvg').classList.remove('active-guide');
+
+				const rangeMsg = isClose ? " - CLOSE RANGE" : "";
+				updateMsg("Instruction", `⚠ SPOOFING ALERT: REMOVE DEVICE${rangeMsg}`, "text-rose-500 font-black");
+				updateMsg("Result", "GATEWAY LOCKED", "text-rose-700 bg-rose-50 border-rose-500");
+
+				const now = Date.now();
+				if (now - lastThreatTime > 3000) {
+					addLog(`Threat detected${isClose ? " (close)" : ""}`);
+					lastThreatTime = now;
+				}
+			}
+
+			function clearThreat() {
+				const container = document.getElementById('videoContainer');
+				if (container.classList.contains('threat-detected')) {
+					container.classList.remove('threat-detected');
+					updateMsg("Instruction", "Align Face within Guide", "text-amber-400");
+					updateMsg("Result", "Ready for Authentication", "text-slate-400");
+					addLog("Threat cleared - resuming");
+				}
+			}
+
+			function triggerBiometricCountdown() {
+				const recentThreat = phoneDetectionBuffer[phoneDetectionBuffer.length - 1];
+				if (recentThreat) {
+					isProcessingFace = false;
+					return;
+				}
+
+				const el = document.getElementById('countdown');
+				let c = 3;
+				el.innerText = c;
+				el.style.display = 'flex';
+
+				const t = setInterval(() => {
+					const threatNow = phoneDetectionBuffer[phoneDetectionBuffer.length - 1];
+					if (threatNow) {
+						clearInterval(t);
+						el.style.display = 'none';
+						isProcessingFace = false;
+						handleThreat(false);
+						return;
+					}
+
+					c--;
+					if (c > 0) {
+						el.innerText = c;
+					} else {
+						clearInterval(t);
+						el.style.display = 'none';
+						executeVerification();
+					}
+				}, 800);
+			}
+
+			async function executeVerification() {
+				const finalCheck = phoneDetectionBuffer[phoneDetectionBuffer.length - 1];
+				if (finalCheck) {
+					isProcessingFace = false;
+					handleThreat(false);
+					return;
+				}
+
+				updateMsg("Result", "Scanning Biometric Geometry...", "text-blue-900 animate-pulse");
+				const videoEl = document.getElementById('video');
+				const live = await faceapi.detectSingleFace(videoEl).withFaceLandmarks().withFaceDescriptor();
+
+				if (!live) {
+					showTemporarily("Result", "Scan Error: Face Lost", "text-amber-600 border-amber-500", 3000);
+					return;
+				}
+
+				// FINAL face size check during verification
+				const box = live.detection.box;
+				const faceWidth = box.width / videoEl.videoWidth;
+				const faceHeight = box.height / videoEl.videoHeight;
+				const faceSize = Math.max(faceWidth, faceHeight);
+
+				if (faceSize > MAX_FACE_SIZE) {
+					showTemporarily("Result", "Face Too Close - Verification Failed", "text-orange-600 border-orange-500", 3000);
+					addLog("Verification blocked: Face too large/close");
+					return;
+				}
+
+				const match = findNearest(kdTreeRoot, live.descriptor);
+				if (match && match.dist < 0.50) {
+					// CHANGED: Use Map.has() to check for duplicates
+					if (presentRolls.has(match.point.roll)) {
+						showTemporarily("Result", "Access Restricted: Already Verified", "text-amber-600 border-amber-500 bg-amber-50", 4000);
+					} else {
+						// CHANGED: Capture time and use Map.set()
+						const attendanceTime = new Date().toLocaleTimeString('en-GB', { 
+							hour: '2-digit', 
+							minute: '2-digit',
+							hour12: false 
+						}); 
+						
+						presentRolls.set(match.point.roll, {
+							roll: match.point.roll,
+							name: match.point.name,
+							time: attendanceTime
+						});
+						
+						addLog(`Confirmed: ${match.point.name} at ${attendanceTime}`);
+						showTemporarily("Result", `${match.point.name}: Attendance Recorded`, "text-emerald-700 border-emerald-500 bg-emerald-50", 5000);
+					}
+				} else {
+					showTemporarily("Result", "Unknown Identity, Verification Failed", "text-rose-700 border-rose-500 bg-rose-50", 4000);
+				}
+			}
+
+			function lockdownUI() {
+				document.getElementById('configPanel').classList.add('lockdown');
+				document.getElementById('backBtn').classList.add('lockdown');
+				document.getElementById('backBtn').onclick = null;
+				addLog("Security Protocol: Terminal Locked.");
+			}
+
+			function checkTimeExpiry(expiryTime) {
+				const check = setInterval(() => {
+					const now = new Date();
+					const cur = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+					if (cur >= expiryTime && isSessionActive) {
+						clearInterval(check);
+						isSessionActive = false;
+						scanLoopActive = false;
+						updateMsg("Instruction", "⚠ SESSION EXPIRED - SYNCING", "text-rose-600 font-black");
+						submitFinalAttendance();
+					}
+				}, 5000);
+			}
+
+			function submitFinalAttendance() {
+				// CHANGED: Extract values from Map
+				const payload = {
+					date: new Date().toISOString().split('T')[0],
+					attendanceRecords: Array.from(presentRolls.values())
+				};
+
+				updateMsg("Instruction", "FINALIZING SESSION...", "text-rose-500 animate-pulse");
+				addLog("Syncing with master database...");
+
+				google.script.run
+					.withSuccessHandler(function (response) {
+						updateMsg("Result", "DATABASE SYNCED SUCCESSFULLY", "text-emerald-700 border-emerald-600");
+						addLog("Email dispatch complete.");
+						addLog("Redirecting to Secure Logout...");
+
+						setTimeout(() => {
+							google.script.run
+								.withSuccessHandler(function (html) {
+									if (html) {
+										document.open();
+										document.write(html);
+										document.close();
+									} else {
+										window.top.location.href = "<?= ScriptApp.getService().getUrl() ?>";
+									}
+								})
+								.withFailureHandler(function () {
+									window.top.location.href = "<?= ScriptApp.getService().getUrl() ?>";
+								})
+								.loadPage("AdminLogin");
+						}, 2000);
+					})
+					.withFailureHandler(function (err) {
+						addLog("Sync Error: " + err.message);
+						alert("Critical Sync Error: Data not saved. Check your internet connection.");
+					})
+					.processAttendance(payload);
+			}
+
+			function updateMsg(type, text, classes) {
+				if (type === "Instruction") {
+					const el = document.getElementById('instruction');
+					el.innerText = text;
+					el.className = "text-amber-400 font-black uppercase tracking-[0.2em] text-sm " + classes;
+				} else {
+					document.getElementById('resultText').innerText = text;
+					document.getElementById('resultBox').className = "p-10 rounded-[2rem] bg-white border-b-8 transition-all duration-700 shadow-2xl " + (classes.includes('border') ? classes : 'border-slate-300');
+				}
+			}
+
+			function showTemporarily(type, text, classes, duration) {
+				updateMsg(type, text, classes);
+				setTimeout(() => {
+					isProcessingFace = false;
+					if (isSessionActive) {
+						updateMsg("Result", "Ready for Next User", "text-slate-400");
+						document.getElementById('guideSvg').classList.remove('active-guide');
+					}
+				}, duration);
+			}
+
+			function addLog(m) {
+				const b = document.getElementById('logBox');
+				b.innerHTML += `<div>> ${new Date().toLocaleTimeString()}: ${m}</div>`;
+				b.scrollTop = b.scrollHeight;
+			}
+
+			window.goBack = () => {
+				if (isSessionActive && !confirm("Session active. Exit anyway?")) return;
+				scanLoopActive = false;
+				google.script.run.withSuccessHandler(html => {
+					document.open();
+					document.write(html);
+					document.close();
+				}).loadPage("AdminDashboard");
+			}
+
+			window.onload = init;
+		})();
+	</script>
+</body>
+
+</html>
