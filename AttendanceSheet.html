@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Secure Audit Terminal | Biometric Portal</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+		body {
+			font-family: 'Inter', sans-serif;
+			background-color: #f1f5f9;
+		}
+
+		.gov-header {
+			background: linear-gradient(90deg, #002147 0%, #003366 100%);
+			border-bottom: 4px solid #fbbf24;
+		}
+
+		.table-container {
+			background: white;
+			border-radius: 20px;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+			border: 1px solid #e2e8f0;
+			overflow: hidden;
+		}
+
+		.sticky-header th {
+			position: sticky;
+			top: 0;
+			background-color: #0f172a !important;
+			color: white !important;
+			z-index: 10;
+			font-size: 11px;
+			text-transform: uppercase;
+			letter-spacing: 0.1em;
+		}
+
+		.status-p {
+			color: #15803d;
+			font-weight: 900;
+			background: #dcfce7;
+			padding: 4px 10px;
+			border-radius: 6px;
+			font-size: 10px;
+		}
+
+		.status-a {
+			color: #b91c1c;
+			font-weight: 900;
+			background: #fee2e2;
+			padding: 4px 10px;
+			border-radius: 6px;
+			font-size: 10px;
+		}
+
+		.custom-scrollbar::-webkit-scrollbar {
+			height: 8px;
+		}
+
+		.custom-scrollbar::-webkit-scrollbar-thumb {
+			background: #cbd5e1;
+			border-radius: 10px;
+		}
+	</style>
+</head>
+
+<body class="pb-12">
+
+	<header class="gov-header text-white p-5 shadow-xl mb-8">
+		<div class="max-w-7xl mx-auto flex justify-between items-center">
+			<div class="flex items-center space-x-4">
+				<div class="bg-white p-2 rounded-lg shadow-inner">
+					<i class="fas fa-file-signature text-blue-900 text-2xl"></i>
+				</div>
+				<div>
+					<h1 class="text-xl font-black uppercase tracking-tighter">Attendance Audit Terminal</h1>
+					<p class="text-[10px] text-amber-400 font-bold tracking-[0.3em] uppercase">Date-Wise Attendance Sheet Display</p>
+				</div>
+			</div>
+            <button onclick="window.auditModule.goBack()" class="bg-amber-500 hover:bg-amber-600 text-blue-900 px-6 py-2 rounded-lg text-xs font-black uppercase shadow-lg transition-all">
+        <i class="fas fa-arrow-left mr-2"></i> Admin Dashboard
+      </button>
+		</div>
+	</header>
+
+	<main class="max-w-7xl mx-auto px-4">
+		<div class="table-container">
+			<div
+				class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/50">
+				<div>
+					<h2 class="text-lg font-black text-slate-800 uppercase italic">Master Attendance Registry</h2>
+					<p class="text-[11px] text-slate-500 font-medium">Verified student logs - Date Format - (MM/DD/YYYY)
+						database.</p>
+				</div>
+				<div class="flex items-center space-x-3">
+					<div id="recordCount"
+						class="bg-white border px-4 py-2 rounded-xl text-[10px] font-black text-slate-600 uppercase">
+						Records: --
+					</div>
+                    <button class="bg-blue-900 hover:bg-black text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md" onclick="window.auditModule.loadAttendance()">
+            <i class="fas fa-sync-alt mr-2"></i> Refresh Data
+          </button>
+				</div>
+			</div>
+
+			<div id="attendance-table-wrapper" class="p-6">
+				<div class="flex flex-col items-center justify-center py-20" id="loader">
+					<div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-900 mb-4"></div>
+					<p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Accessing Database...</p>
+				</div>
+
+				<div class="table-responsive custom-scrollbar overflow-x-auto">
+					<table class="w-full text-left border-collapse" id="attendanceTable" style="display:none;">
+						<thead class="sticky-header" id="tableHead">
+						</thead>
+						<tbody id="tableBody" class="text-slate-700 font-medium text-sm divide-y divide-slate-100">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<footer class="mt-12 text-center text-slate-400">
+		<p class="text-[9px] font-black uppercase tracking-[0.6em]">© 2026 EKR | AI Realtime Face Detecting Attendance
+			System
+		</p>
+	</footer>
+
+<script>
+
+  (function(window, document) {
+    "use strict";
+
+    const auditModule = {};
+
+    auditModule.loadAttendance = function() {
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(auditModule.renderTable)
+        .withFailureHandler(showError)
+        .getAttendanceData();
+    };
+
+    auditModule.renderTable = function(data) {
+      if (!data || data.length === 0) {
+        document.getElementById('attendance-table-wrapper').innerHTML = `
+          <div class="text-center py-20">
+            <i class="fas fa-database text-4xl text-slate-200 mb-4"></i>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">No data available in registry.</p>
+          </div>`;
+        return;
+      }
+
+      document.getElementById('recordCount').innerText = `Records: ${data.length - 1}`;
+      const head = document.getElementById('tableHead');
+      const body = document.getElementById('tableBody');
+      
+      head.innerHTML = "";
+      body.innerHTML = "";
+
+      // 1. Headers
+      const headers = data[0];
+      let headHtml = "<tr class='border-b-2 border-slate-200'>";
+      headers.forEach(header => {
+        headHtml += `<th class="p-4 border-r border-slate-700/50">${header}</th>`;
+      });
+      headHtml += "</tr>";
+      head.innerHTML = headHtml;
+
+      // 2. Rows
+      for (let i = 1; i < data.length; i++) {
+        let rowHtml = "<tr class='hover:bg-slate-50 transition-colors'>";
+        data[i].forEach(cell => {
+          let cellContent = cell || "";
+          let badge = cellContent;
+          
+          if(cellContent === "P") badge = `<span class="status-p">PRESENT</span>`;
+          if(cellContent === "A") badge = `<span class="status-a">ABSENT</span>`;
+          if (cellContent.includes(":")) {
+            badge = `<span class="status-p">${cellContent}</span>`;
+          }
+          if(cellContent === "" || cellContent === null) badge = `<span class="text-slate-300">--</span>`;
+          
+          rowHtml += `<td class="p-4 border-r border-slate-100 text-xs">${badge}</td>`;
+        });
+        rowHtml += "</tr>";
+        body.insertAdjacentHTML('beforeend', rowHtml);
+      }
+
+      showLoader(false);
+    };
+
+    function showLoader(isLoading) {
+      const loader = document.getElementById('loader');
+      const table = document.getElementById('attendanceTable');
+      if(loader) loader.style.display = isLoading ? 'flex' : 'none';
+      if(table) table.style.display = isLoading ? 'none' : 'table';
+    }
+
+    function showError(error) {
+      alert("CRITICAL SECURITY ERROR: " + error.message);
+      showLoader(false);
+    }
+
+    auditModule.goBack = function() {
+      google.script.run
+        .withSuccessHandler(html => {
+          document.open(); document.write(html); document.close();
+        })
+        .loadPage("AdminDashboard");
+    };
+
+    // Export bridge
+    window.auditModule = auditModule;
+
+    // Auto-load on entry
+    document.addEventListener('DOMContentLoaded', auditModule.loadAttendance);
+
+  })(window, document);  
+</script>
+</body>
+
+</html>
